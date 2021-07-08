@@ -43,11 +43,11 @@ def profile(request, username):
                                          author=author).exists()
     return render(request, 'posts/profile.html',
                   {'author': author,
-                  'page': page,
-                  'posts_count': posts_count,
-                  'follower_count': follower_count,
-                  'following_count': following_count, 
-                  'is_following': is_following})
+                   'page': page,
+                   'posts_count': posts_count,
+                   'follower_count': follower_count,
+                   'following_count': following_count,
+                   'is_following': is_following})
 
 
 def post_view(request, username, post_id):
@@ -61,12 +61,12 @@ def post_view(request, username, post_id):
                                          author=post.author).exists()
     return render(request, 'posts/post.html',
                   {'post': post,
-                  'comments': comments,
-                  'form': form,
-                  'is_following': is_following,
-                  'posts_count': posts_count,
-                  'follower_count': follower_count,
-                  'following_count': following_count})
+                   'comments': comments,
+                   'form': form,
+                   'is_following': is_following,
+                   'posts_count': posts_count,
+                   'follower_count': follower_count,
+                   'following_count': following_count})
 
 
 @login_required

@@ -54,6 +54,15 @@ class Comment(models.Model):
     created = models.DateTimeField(auto_now_add=True,
                                    verbose_name='Дата комментария')
 
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+        ordering = ('-created',)
+
+    def __str__(self):
+        return self.text
+
+
 class Follow(models.Model):
     user = models.ForeignKey(User, 'Подписчик', related_name='follower')
     author = models.ForeignKey(User, 'Инфлюенсер', related_name='following')

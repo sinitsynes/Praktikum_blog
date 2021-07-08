@@ -176,17 +176,18 @@ class PaginatorTest(TestCase):
                 author=cls.author,
                 group=cls.group
             )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
 
     def setUp(self):
         cache.clear()
-    
+
     def test_paginator(self):
         posts_on_page = (
             (10, 1, (reverse('index'))),
-            (5, 2, (reverse('index') + '?page=2' )),
+            (5, 2, (reverse('index') + '?page=2')),
             (10, 1, (reverse('profile',
                      kwargs={'username': self.author.username}))),
             (5, 2, (reverse('profile',
@@ -200,8 +201,9 @@ class PaginatorTest(TestCase):
             with self.subTest(page=page):
                 response = self.guest_client.get(url)
                 self.assertEqual(
-                response.context.get(
-                    'page').paginator.page(page).object_list.count(), amount)
+                    response.context.get(
+                        'page').paginator.page(page).object_list.count(),
+                    amount)
 
 
 class CacheTest(TestCase):
@@ -236,7 +238,7 @@ class CommentTest(TestCase):
         cls.post = Post.objects.create(
             text='Здравствуйте, я из теста' * 15,
             author=cls.author,
-            ) 
+        )
         cls.guest_client = Client()
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.author)
@@ -249,31 +251,31 @@ class CommentTest(TestCase):
         form_data = {
             'text': 'Тестовый комментарий'
         }
-        
+
         response = self.authorized_client.get(reverse('post_view', kwargs={
-                        'username': self.author.username,
-                        'post_id': self.post.id
-                    }))
-        
+            'username': self.author.username,
+            'post_id': self.post.id
+        }))
+
         self.guest_client.post(reverse('add_comment', kwargs={
-                        'username': self.author.username,
-                        'post_id': self.post.id
-                    }), data=form_data, follow=True)
+            'username': self.author.username,
+            'post_id': self.post.id
+        }), data=form_data, follow=True)
         self.assertNotContains(response, form_data['text'])
 
         self.authorized_client.post(reverse('add_comment', kwargs={
-                        'username': self.author.username,
-                        'post_id': self.post.id
-                    }), data=form_data, follow=True)
+            'username': self.author.username,
+            'post_id': self.post.id
+        }), data=form_data, follow=True)
 
         response_2 = self.authorized_client.get(reverse('post_view', kwargs={
-                        'username': self.author.username,
-                        'post_id': self.post.id
-                    }))
+            'username': self.author.username,
+            'post_id': self.post.id
+        }))
         self.assertContains(response_2, form_data['text'])
 
 
-class FollowTestViews(TestCase):    
+class FollowTestViews(TestCase):
     def setUp(self):
         self.reader_user = User.objects.create(username='reader')
         self.reader_client = Client()
@@ -290,23 +292,23 @@ class FollowTestViews(TestCase):
 
         self.authors_post = Post.objects.create(
             text='Запись для теста подписок',
-            author = self.author
+            author=self.author
         )
 
     def test_follow(self):
         self.reader_client.get(reverse('profile_follow',
-                              kwargs={'username': self.author.username}))
+                               kwargs={'username': self.author.username}))
         self.assertTrue(
             self.author.following.filter(
                 user=self.reader_user).exists())
-        
+
     def test_unfollow(self):
         self.reader_client.get(reverse('profile_unfollow',
-                              kwargs={'username': self.author.username}))
+                               kwargs={'username': self.author.username}))
         self.assertFalse(
             self.author.following.filter(
                 user=self.reader_user).exists())
-    
+
     def test_followers_follow(self):
         response = self.reader_client.get(reverse('follow_index'))
         self.assertTrue(
