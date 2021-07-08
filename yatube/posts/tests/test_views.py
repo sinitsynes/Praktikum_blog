@@ -164,7 +164,8 @@ class PaginatorTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.author = User.objects.create(username='test_author')
-        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.author)
         cls.group = Group.objects.create(
             title='тестовое сообщество',
             slug='test_slug',
@@ -199,7 +200,7 @@ class PaginatorTest(TestCase):
         )
         for amount, page, url in posts_on_page:
             with self.subTest(page=page):
-                response = self.guest_client.get(url)
+                response = self.authorized_client.get(url)
                 self.assertEqual(
                     response.context.get(
                         'page').paginator.page(page).object_list.count(),
