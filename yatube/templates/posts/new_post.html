@@ -14,7 +14,7 @@
     <div class='col-md-8 p-5'>
       <div class='card'>
         <div class='card-header'>
-          {% if to_edit %}
+          {% if form.instance.id == post.id %}
             Редактирование поста
           {% else %}
             Новый пост
@@ -51,7 +51,7 @@
 
             <div class='col-md-6 offset-md-4'>
               <button type='submit' class='btn btn-primary'>
-                {% if to_edit %}
+                {% if form.instance.id == post.id %}
                   Сохранить
                 {% else %}
                   Добавить

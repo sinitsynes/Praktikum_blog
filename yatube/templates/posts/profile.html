@@ -4,12 +4,12 @@
 {% block content %}
   <div class="row">
     <div class="col-md-3 mb-3 mt-1">
-      {% include "posts/profile_card.html" %}
+      {% include "includes/profile_card.html" %}
     </div>
 
     <div class="col-md-9">
       {% for post in page %}
-        {% include "posts/post_item.html" with post=post %}
+        {% include "includes/post_item.html" %}
       {% endfor %}
       {% include "includes/paginator.html" %}
     </div>

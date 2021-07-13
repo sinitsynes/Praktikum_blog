@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from django.core.cache import cache
 from django.test import Client, TestCase
 
@@ -23,81 +24,88 @@ class PostsURLTests(TestCase):
 
     def setUp(self):
         cache.clear()
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.author)
+        PostsURLTests.authorized_client = Client()
+        PostsURLTests.authorized_client.force_login(PostsURLTests.author)
 
     def test_valid_url_200_response_unauthorized(self):
         responses = (
             '/',
-            f'/group/{self.group.slug}/',
-            f'/{self.author.username}/',
-            f'/{self.author.username}/{self.post.id}/'
+            f'/group/{PostsURLTests.group.slug}/',
+            f'/{PostsURLTests.author.username}/',
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/'
         )
         for value in responses:
             with self.subTest(response=value):
-                response = self.guest_client.get(value)
-                self.assertEqual(response.status_code, 200)
+                response = self.client.get(value)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_restricted_access_for_unauthorized(self):
         responses = (
             '/new/',
-            f'/{self.author.username}/{self.post.id}/edit/'
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/edit/',
+            f'/{PostsURLTests.author.username}'
+            f'/{PostsURLTests.post.id}/comment/'
         )
         for response in responses:
             with self.subTest(response=response):
-                response = self.guest_client.get(response)
-                self.assertEqual(response.status_code, 302)
+                response = self.client.get(response)
+                self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
-    def test_new_post_redirect_unauthorized(self):
-        response = self.guest_client.get('/new/', follow=True)
+    def test_redirect_unauthorized(self):
+        not_author_client = Client()
+        not_author_client.force_login(PostsURLTests.not_author)
+
+        # неавторизованный пользователь не может создать пост,
+        # переходит на страницу логина
+        response = self.client.get('/new/', follow=True)
         self.assertRedirects(response, '/auth/login/?next=/new/')
+
+        # неавторизованный пользователь не может комментировать пост,
+        # переходит на страницу логина
+        response = self.client.get(f'/{PostsURLTests.author.username}'
+                                   f'/{PostsURLTests.post.id}/comment/')
+        self.assertRedirects(
+            response,
+            '/auth/login/?next=' + f'/{PostsURLTests.author.username}'
+                                   f'/{PostsURLTests.post.id}/comment/')
+
+        # не-автор поста не может редактировать пост,
+        # переходит на страницу его просмотра
+        response = not_author_client.get(
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/edit/')
+        self.assertRedirects(
+            response,
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/')
 
     def test_valid_url_200_response_authorized(self):
         responses = (
             '/',
-            f'/group/{self.group.slug}/',
+            f'/group/{PostsURLTests.group.slug}/',
             '/new/',
-            f'/{self.author.username}/',
-            f'/{self.author.username}/{self.post.id}/'
+            f'/{PostsURLTests.author.username}/',
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/'
         )
         for response in responses:
             with self.subTest(response=response):
                 response = self.authorized_client.get(response)
-                self.assertEqual(response.status_code, 200)
-
-    def test_templates_used(self):
-        template_url = {
-            '/': 'posts/index.html',
-            f'/group/{self.group.slug}/': 'posts/group.html',
-            '/new/': 'posts/new_post.html',
-            f'/{self.author.username}/{self.post.id}/edit/':
-            'posts/new_post.html',
-            f'/{self.author.username}/': 'posts/profile.html',
-            f'/{self.author.username}/{self.post.id}/': 'posts/post.html',
-            '404': 'misc/404.html'
-        }
-        for address, template in template_url.items():
-            with self.subTest(template=template):
-                response = self.authorized_client.get(address)
-                self.assertTemplateUsed(response, template)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_edit_post_for_author(self):
-        response = self.authorized_client.get(
-            f'/{self.author.username}/{self.post.id}/edit/')
-        self.assertEqual(response.status_code, 200)
+        response = PostsURLTests.authorized_client.get(
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/edit/')
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_edit_post_for_not_author(self):
-        self.authorized_client_2 = Client()
-        self.authorized_client_2.force_login(self.not_author)
-        response = self.authorized_client_2.get(
-            f'/{self.author.username}/{self.post.id}/edit/'
+        authorized_client_2 = Client()
+        authorized_client_2.force_login(PostsURLTests.not_author)
+        response = authorized_client_2.get(
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/edit/'
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertRedirects(
-            response, f'/{self.author.username}/{self.post.id}/')
+            response,
+            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/')
 
     def test_404(self):
-        response = self.guest_client.get(
-            f'/{self.author.username}/{self.post.id} + {1}')
-        self.assertEqual(response.status_code, 404)
+        response = self.client.get('/not_existing_url/')
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

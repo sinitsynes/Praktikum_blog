@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.urls import reverse
 from django.test import Client, TestCase
 
@@ -14,4 +16,4 @@ class StaticURLTests(TestCase):
         for pathname in pathnames:
             with self.subTest(pathname=pathname):
                 response = self.guest_client.get(reverse(pathname))
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)

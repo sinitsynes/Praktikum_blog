@@ -4,10 +4,10 @@
 {% block header %}The Last Social Media You'll Ever Need{% endblock %}
 {% block content %}
 
-  {% include "includes/menu.html" with index=True %}
+  {% include "includes/menu.html" with follow=True %}
 
   {% for post in page %}
-    {% include 'posts/post_item.html' with post=post %}
+    {% include "includes/post_item.html" with comment_button=True %}
       {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
 

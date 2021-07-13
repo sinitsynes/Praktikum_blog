@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Записи сообщества {{ group.title }}{% endblock %}
 {% block header %}{{ group.title }}{% endblock %}
-{% load thumbnail %}
+
 {% block content %}
-  <p>{{ group.description }}</p>
+  <p>{{ group.description|linebreaksbr }}</p>
 
   {% for post in page %}
-    {% include "posts/post_item.html" with post=post %}
+    {% include "includes/post_item.html" with comment_button=True %}
   {% endfor %}
 
   {% include "includes/paginator.html" %}

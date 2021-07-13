@@ -1,16 +1,25 @@
 {% extends "base.html" %}
+{% load cache %}
 
 {% block title %}Последние обновления на сайте{% endblock %}
 {% block header %}The Last Social Media You'll Ever Need{% endblock %}
+
 {% block content %}
 
-  {% include "includes/menu.html" with index=True %}
+{% cache 20 index_page request.user.username page %}
 
+{% include "includes/menu.html" with index=True %}
+ 
   {% for post in page %}
-    {% include 'posts/post_item.html' with post=post %}
-      {% if not forloop.last %}<hr>{% endif %}
+     
+      {% include "includes/post_item.html" with comment_button=True %}
+
+    {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
 
+{% endcache %}
+
   {% include "includes/paginator.html" %}
+
 
 {% endblock %}

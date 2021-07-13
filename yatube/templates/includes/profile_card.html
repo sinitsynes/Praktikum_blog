@@ -1,0 +1,73 @@
+<div class="card">
+    <div class="card-body">
+      <div class="h2">
+        {% if post %}
+          {{ post.author.get_full_name }}
+        {% else %}
+          {{ author.get_full_name }}
+        {% endif %}
+      </div>
+      <div class="h3 text-muted">
+        {% if post %}
+          @{{ post.author.username }}
+        {% else %}
+          @{{ author.username }}
+        {% endif %}
+      </div>
+    </div>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <div class="h6 text-muted">
+          {% if post %}
+            Подписчиков: {{ post.author.following.count }} <br>
+            Подписан: {{ post.author.follower.count }}
+          {% else %}
+            Подписчиков: {{ author.following.count }} <br>
+            Подписан: {{ author.follower.count }}
+          {% endif %}
+        </div>
+      </li>
+      <li class="list-group-item">
+        <div class="h6 text-muted">
+          {% if post %}
+            Записей: {{ post.author.posts.count }}
+          {% else %}
+           Записей: {{ author.posts.count }}
+          {% endif %}
+        </div>
+      </li>
+      {% if user.is_authenticated and user != author %}
+      <li class="list-group-item">
+        {% if post %}
+          {% if following %}
+            <a
+              class="btn btn-lg btn-light"
+              href="{% url 'profile_unfollow' post.author.username %}" role="button">
+              Отписаться
+            </a>
+          {% else %}
+            <a
+              class="btn btn-lg btn-primary"
+              href="{% url 'profile_follow' post.author.username %}" role="button">
+              Подписаться
+            </a>
+          {% endif %}
+        {% else %}
+          {% if following %}
+            <a
+              class="btn btn-lg btn-light"
+              href="{% url 'profile_unfollow' author.username %}" role="button">
+              Отписаться
+            </a>
+          {% else %}
+            <a
+              class="btn btn-lg btn-primary"
+              href="{% url 'profile_follow' author.username %}" role="button">
+              Подписаться
+            </a>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+      </li>
+    </ul>
+  </div>

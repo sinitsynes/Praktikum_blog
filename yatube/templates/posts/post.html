@@ -3,11 +3,14 @@
 {% block content %}
   <div class="row">
     <div class="col-md-3 mb-3 mt-1">
-      {% include "posts/profile_card.html" %}
+      {% include "includes/profile_card.html" %}
     </div>
     <div class="col-md-9">
-      {% include "posts/post_item.html" with post=post %}
-      {% include "posts/comments.html" %}
+      
+      {% include "includes/post_item.html" %}
+      {% include "includes/comments.html" %}
+      {% if comment_button == False %}
+      {% endif %}
     </div>
   </div>
 {% endblock %}
