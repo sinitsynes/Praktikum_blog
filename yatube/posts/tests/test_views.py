@@ -6,7 +6,6 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
-from django.core.cache.utils import make_template_fragment_key
 
 from posts.forms import CommentForm, PostForm
 from posts.models import Follow, Group, Post, User
@@ -122,9 +121,8 @@ class PostsViewsTests(TestCase):
         self.assertEqual(PostsViewsTests.post.author, post.author)
         self.assertEqual(PostsViewsTests.post.comments, post.comments)
 
-        comment_field = 'text'
-        comment_form = CommentForm.Meta.fields[0]
-        self.assertEqual(comment_field, comment_form)
+        self.assertIn('form', response.context)
+        self.assertIsInstance(response.context['form'], CommentForm)
 
     def test_new_post_edit_post_valid_context(self):
         responses = (
@@ -136,16 +134,8 @@ class PostsViewsTests(TestCase):
                     }))
         for response in responses:
             response = PostsViewsTests.authorized_client.get(response)
-            form = PostForm(data={
-                            'text': 'Тестовый текст',
-                            'group': None,
-                            'image': None})
-            self.assertTrue(form.is_valid())
-
-            form = PostForm(data={'not_Postform_field': 'Тестовый текст',
-                                  'group': None,
-                                  'image': None})
-            self.assertFalse(form.is_valid())
+            self.assertIn('form', response.context)
+            self.assertIsInstance(response.context['form'], PostForm)
 
     def test_group_post_published_on_main(self):
         response = PostsViewsTests.authorized_client.get(reverse('index'))
@@ -252,10 +242,6 @@ class CacheTest(TestCase):
         first_post_other_response = other_user_response.context['page'][0]
         self.assertEqual(test_post_for_cache.text,
                          first_post_other_response.text)
-
-        cache_key = make_template_fragment_key('index_page', 'test_author')
-        cache_available = cache.get(cache_key)
-        print(cache_available)
 
         # После чистки кэша пост виден и для первого пользователя
         cache.clear()
