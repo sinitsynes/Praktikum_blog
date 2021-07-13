@@ -16,6 +16,8 @@ from yatube.settings import BASE_DIR
 
 if not os.path.exists(os.path.join(BASE_DIR, 'media')):
     os.mkdir('media')
+else:
+    pass
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(dir=settings.BASE_DIR))
