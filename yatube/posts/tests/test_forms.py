@@ -1,19 +1,12 @@
-import os
 import shutil
 import tempfile
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, override_settings, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from posts.models import Group, Post, User
-from yatube.settings import BASE_DIR
-
-if not os.path.exists(os.path.join(BASE_DIR, 'media')):
-    os.mkdir('media')
-else:
-    pass
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(dir=settings.BASE_DIR))

@@ -1,4 +1,5 @@
 from http import HTTPStatus
+
 from django.core.cache import cache
 from django.test import Client, TestCase
 
@@ -6,6 +7,7 @@ from posts.models import Group, Post, User
 
 
 class PostsURLTests(TestCase):
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
