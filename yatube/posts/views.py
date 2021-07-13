@@ -64,7 +64,7 @@ def new_post(request):
         post.save()
         return redirect('index')
     return render(request, 'posts/new_post.html',
-                  {'form': form, 'to_edit': False})
+                  {'form': form})
 
 
 @login_required

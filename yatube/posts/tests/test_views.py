@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.core.cache.utils import make_template_fragment_key
 
 from posts.forms import CommentForm, PostForm
 from posts.models import Follow, Group, Post, User
@@ -135,15 +136,16 @@ class PostsViewsTests(TestCase):
                     }))
         for response in responses:
             response = PostsViewsTests.authorized_client.get(response)
-            form_fields = (
-                ('text', 0),
-                ('image', 1),
-                ('group', 2)
-            )
-            for post_field, arg in form_fields:
-                with self.subTest(post_field=post_field):
-                    form_field = PostForm.Meta.fields[arg]
-                    self.assertEqual(post_field, form_field)
+            form = PostForm(data={
+                            'text': 'Тестовый текст',
+                            'group': None,
+                            'image': None})
+            self.assertTrue(form.is_valid())
+
+            form = PostForm(data={'not_Postform_field': 'Тестовый текст',
+                                  'group': None,
+                                  'image': None})
+            self.assertFalse(form.is_valid())
 
     def test_group_post_published_on_main(self):
         response = PostsViewsTests.authorized_client.get(reverse('index'))
@@ -250,6 +252,10 @@ class CacheTest(TestCase):
         first_post_other_response = other_user_response.context['page'][0]
         self.assertEqual(test_post_for_cache.text,
                          first_post_other_response.text)
+
+        cache_key = make_template_fragment_key('index_page', 'test_author')
+        cache_available = cache.get(cache_key)
+        print(cache_available)
 
         # После чистки кэша пост виден и для первого пользователя
         cache.clear()
