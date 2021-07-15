@@ -366,7 +366,7 @@ class FollowTestViews(TestCase):
             text='Запись для теста подписок',
             author=FollowTestViews.author
         )
-        
+
         not_reader_user = User.objects.create(username='not_reader')
         not_reader_client = Client()
         not_reader_client.force_login(not_reader_user)
