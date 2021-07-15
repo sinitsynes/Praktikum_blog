@@ -50,7 +50,7 @@ class Comment(models.Model):
     author = models.ForeignKey(User, verbose_name='Автор',
                                related_name='comments',
                                on_delete=models.CASCADE)
-    text = models.TextField(blank=True, null=True,
+    text = models.TextField(blank=False, null=True,
                             verbose_name='Комментарий')
     created = models.DateTimeField(auto_now_add=True,
                                    verbose_name='Дата комментария')
@@ -69,11 +69,11 @@ class Follow(models.Model):
     author = models.ForeignKey(User, 'Инфлюенсер', related_name='following')
 
     class Meta:
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 fields=('user', 'author'), name='unique_following'
             ),
             models.CheckConstraint(
                 check=~Q(user=F('author')), name='no_self_following'
             )
-        ]
+        )

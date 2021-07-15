@@ -8,8 +8,10 @@ from django.urls import reverse
 
 from posts.models import Group, Post, User
 
+TEMP_MEDIA = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp(dir=settings.BASE_DIR))
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
 class PostFormTests(TestCase):
 
     @classmethod
@@ -29,16 +31,10 @@ class PostFormTests(TestCase):
             content_type='image/gif')
 
         cls.author = User.objects.create_user(username='test_author')
-        cls.not_author = User.objects.create(username='not_author')
         cls.group = Group.objects.create(
             title='тестовое сообщество',
             slug='test_slug',
             description='сообщество для тестов'
-        )
-        cls.post = Post.objects.create(
-            text='Пост слоёного теста',
-            author=cls.author,
-            group=cls.group,
         )
 
     @classmethod
@@ -47,8 +43,8 @@ class PostFormTests(TestCase):
         super().tearDownClass()
 
     def setUp(self):
-        PostFormTests.author_client = Client()
-        PostFormTests.author_client.force_login(PostFormTests.author)
+        self.author_client = Client()
+        self.author_client.force_login(PostFormTests.author)
 
     def test_post_create_authorized(self):
         posts_count = Post.objects.count()
@@ -58,16 +54,17 @@ class PostFormTests(TestCase):
             'image': PostFormTests.uploaded
         }
 
-        response = PostFormTests.author_client.post(
+        response = self.author_client.post(
             reverse('new_post'), data=form_data,
             follow=True
         )
+        self.assertRedirects(response, reverse('index'))
+
         new_post = Post.objects.first()
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(new_post.text, form_data['text'])
-        self.assertEqual(new_post.group, PostFormTests.group)
+        self.assertEqual(new_post.group.id, form_data['group'])
         self.assertEqual(new_post.image, 'posts/small.gif')
-        self.assertRedirects(response, reverse('index'))
 
     def test_post_create_unauthorized(self):
         posts_count_before = Post.objects.count()
@@ -80,119 +77,143 @@ class PostFormTests(TestCase):
             reverse('new_post'), data=form_data,
             follow=True
         )
+        self.assertRedirects(
+            unauthorized_response,
+            reverse('login') + '?next=' + reverse('new_post'))
+
         posts_count_after = Post.objects.count()
         self.assertEqual(posts_count_before, posts_count_after)
-        self.assertRedirects(unauthorized_response, '/auth/login/?next=/new/')
 
     def test_authorized_post_edit(self):
+        new_group = Group.objects.create(
+            title='New Group',
+            slug='new_group',
+            description='group to test editing'
+        )
+        post = Post.objects.create(
+            text='Пост слоёного теста',
+            author=PostFormTests.author,
+            group=PostFormTests.group,
+        )
+        post_view_kwargs = {'username': post.author.username,
+                            'post_id': post.id}
+
         post_count_before = Post.objects.count()
+
         form_data = {
             'text': 'Отредактировал текст',
-            'group': PostFormTests.group.id
+            'group': new_group.id
         }
-        to_edit_post = PostFormTests.author_client.post(
-            reverse(
-                'post_edit',
-                kwargs={'username': PostFormTests.author,
-                        'post_id': PostFormTests.post.id}
-            ),
+        to_edit_post = self.author_client.post(
+            reverse('post_edit', kwargs=post_view_kwargs),
             data=form_data,
             follow=True
         )
-        post_count_after = Post.objects.count()
-        edited_post = PostFormTests.author_client.get(
-            reverse('post_view',
-                    kwargs={
-                        'username': f'{PostFormTests.author.username}',
-                        'post_id': f'{PostFormTests.post.id}'
-                    }))
-        post = edited_post.context['post']
-        self.assertEqual(post_count_before, post_count_after)
-        self.assertNotEqual(post.text, PostFormTests.post.text)
-        self.assertEqual(post.group, PostFormTests.post.group)
         self.assertRedirects(
             to_edit_post,
-            reverse('post_view', kwargs={
-                    'username': f'{PostFormTests.author.username}',
-                    'post_id': f'{PostFormTests.post.id}'
-                    }))
-
-    def test_unauthorized_edit(self):
-        PostFormTests.not_author_client = Client()
-        PostFormTests.not_author_client.force_login(PostFormTests.not_author)
-        post_count_before = Post.objects.count()
-        unauthorized_form_data = {
-            'text': 'Правки от не-автора'
-        }
-
-        unauthorized_edit = PostFormTests.not_author_client.post(
-            reverse(
-                'post_edit',
-                kwargs={'username': PostFormTests.author,
-                        'post_id': PostFormTests.post.id}
-            ),
-            data=unauthorized_form_data,
-            follow=True
-        )
+            reverse('post_view', kwargs=post_view_kwargs))
 
         post_count_after = Post.objects.count()
+        post.refresh_from_db()
 
-        unauthorized_edited_post = PostFormTests.not_author_client.get(
-            reverse('post_view',
-                    kwargs={
-                        'username': f'{PostFormTests.author.username}',
-                        'post_id': f'{PostFormTests.post.id}'
-                    }))
-
-        not_edited_post = unauthorized_edited_post.context['post']
         self.assertEqual(post_count_before, post_count_after)
-        self.assertEqual(not_edited_post.text, PostFormTests.post.text)
-        self.assertEqual(not_edited_post.group, PostFormTests.post.group)
+        self.assertEqual(form_data['text'], post.text)
+        self.assertEqual(form_data['group'], new_group.id)
+        self.assertEqual(post.author.username, PostFormTests.author.username)
+
+    def test_unauthorized_edit(self):
+        new_group = Group.objects.create(
+            title='New Group',
+            slug='new_group',
+            description='group to test editing'
+        )
+        post = Post.objects.create(
+            text='Пост слоёного теста',
+            author=PostFormTests.author,
+            group=PostFormTests.group,
+        )
+        post_view_kwargs = {'username': post.author.username,
+                            'post_id': post.id}
+
+        not_author = User.objects.create(username='not_author')
+        not_author_client = Client()
+        not_author_client.force_login(not_author)
+
+        post_count_before = Post.objects.count()
+        form_data = {
+            'text': 'Правки от не-автора',
+            'group': new_group.id
+        }
+
+        unauthorized_edit = not_author_client.post(
+            reverse('post_edit', kwargs=post_view_kwargs),
+            data=form_data,
+            follow=True
+        )
         self.assertRedirects(
             unauthorized_edit,
-            reverse('post_view',
-                    kwargs={'username': f'{PostFormTests.author.username}',
-                            'post_id': f'{PostFormTests.post.id}'
-                            }))
+            reverse('post_view', kwargs=post_view_kwargs))
+        post_count_after = Post.objects.count()
+
+        post.refresh_from_db()
+
+        self.assertEqual(post_count_before, post_count_after)
+        self.assertNotEqual(form_data['text'], post.text)
+        self.assertNotEqual(form_data['group'], post.group)
+        self.assertEqual(
+            PostFormTests.author.username, post.author.username)
 
     def test_comment_authorized(self):
-        post = Post.objects.first()
+        post = Post.objects.create(
+            text='Пост слоёного теста',
+            author=PostFormTests.author,
+            group=PostFormTests.group,
+        )
+        post_view_kwargs = {'username': post.author.username,
+                            'post_id': post.id}
+
         comment_count = post.comments.count()
         form_data = {
             'text': 'oh-la-la'
         }
-        response = PostFormTests.author_client.post(
-            reverse('add_comment',
-                    kwargs={
-                        'username': f'{PostFormTests.author.username}',
-                        'post_id': f'{PostFormTests.post.id}'
-                    }), data=form_data, follow=True)
-        self.assertEqual(post.comments.count(), comment_count + 1)
-        self.assertEqual(post.comments.first().text, form_data['text'])
+
+        response = self.author_client.post(
+            reverse('add_comment', kwargs=post_view_kwargs),
+            data=form_data,
+            follow=True
+        )
         self.assertRedirects(
             response,
-            reverse('post_view',
-                    kwargs={'username': f'{PostFormTests.author.username}',
-                            'post_id': f'{PostFormTests.post.id}'
-                            }))
+            reverse('post_view', kwargs=post_view_kwargs))
+
+        comment = post.comments.first()
+        self.assertEqual(post.comments.count(), comment_count + 1)
+        self.assertEqual(comment.text, form_data['text'])
+        self.assertEqual(comment.post.id, post.id)
+        self.assertEqual(comment.author.username, post.author.username)
 
     def test_comment_unauthorized(self):
-        post = Post.objects.first()
+        post = Post.objects.create(
+            text='Пост слоёного теста',
+            author=PostFormTests.author,
+            group=PostFormTests.group,
+        )
+        post_view_kwargs = {'username': post.author.username,
+                            'post_id': post.id}
+
         comment_count = post.comments.count()
         form_data = {
             'text': 'oh-la-la'
         }
         unauthorized_response = self.client.post(
             reverse('add_comment',
-                    kwargs={
-                        'username': f'{PostFormTests.author.username}',
-                        'post_id': f'{PostFormTests.post.id}'
-                    }), data=form_data, follow=True)
-        add_comment_url = reverse(
-            'add_comment',
-            kwargs={'username': f'{PostFormTests.author.username}',
-                    'post_id': f'{PostFormTests.post.id}'
-                    })
-        self.assertEqual(post.comments.count(), comment_count)
+                    kwargs=post_view_kwargs),
+            data=form_data,
+            follow=True
+        )
+
+        add_comment_url = reverse('add_comment', kwargs=post_view_kwargs)
         self.assertRedirects(unauthorized_response,
-                             '/auth/login/?next=' + add_comment_url)
+                             reverse('login') + '?next=' + add_comment_url)
+
+        self.assertEqual(post.comments.count(), comment_count)

@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Записи пользователя {{ author.username }}{% endblock %}
-{% load thumbnail %}
 {% block content %}
   <div class="row">
     <div class="col-md-3 mb-3 mt-1">
@@ -9,8 +8,9 @@
 
     <div class="col-md-9">
       {% for post in page %}
-        {% include "includes/post_item.html" %}
+        {% include "includes/post_item.html" with comment_button=True read_button=True %}
       {% endfor %}
+
       {% include "includes/paginator.html" %}
     </div>
   </div>

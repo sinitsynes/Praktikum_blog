@@ -6,7 +6,7 @@
   <p>{{ group.description|linebreaksbr }}</p>
 
   {% for post in page %}
-    {% include "includes/post_item.html" with comment_button=True %}
+    {% include "includes/post_item.html" with comment_button=True read_button=True%}
   {% endfor %}
 
   {% include "includes/paginator.html" %}

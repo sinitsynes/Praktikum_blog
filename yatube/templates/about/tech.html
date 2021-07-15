@@ -3,25 +3,7 @@
 {% block content %}
   {% load static %}
   <div class="row">
-    <div class="col-md-3 mb-3 mt-1">
-      <div class="card">
-        <div class="card-body">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <div class="h3">
-                Евгений Синицын
-                <img src="{% static 'profile_pic.jpg' %}" alt="profile picture" style="width:100%; height:100%">
-              </div>
-            </li>
-            <li class="list-group-item">
-              <div class="h6 text-muted">
-                <a href="https://github.com/sinitsynes">GitHub</a>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    {% include "includes/about_profile_card.html" %}
     <div class="col-md-9">
       <div class="card-body">
         <div class="card-text">

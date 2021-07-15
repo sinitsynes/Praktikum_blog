@@ -16,7 +16,7 @@ def paginator(request, post_list):
 
 
 def index(request):
-    post_list = Post.objects.prefetch_related('author').all()
+    post_list = Post.objects.select_related('author').all()
     page = paginator(request, post_list)
     return render(request, 'posts/index.html',
                   {'page': page})
@@ -47,10 +47,8 @@ def profile(request, username):
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
     form = CommentForm()
-    comments = post.comments.all()
     return render(request, 'posts/post.html',
                   {'post': post,
-                   'comments': comments,
                    'form': form}
                   )
 
@@ -87,7 +85,6 @@ def post_edit(request, username, post_id):
 @login_required
 def add_comment(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
-    comments = post.comments.all()
     form = CommentForm(
         request.POST)
     if form.is_valid():
@@ -97,13 +94,15 @@ def add_comment(request, username, post_id):
         comment.save()
         return redirect('post_view', post_id=post_id,
                         username=post.author.username)
-    return render(request, 'includes/comments.html',
-                  {'form': form, 'post': post, 'comments': comments})
+    return redirect('post_view', post_id=post_id,
+                    username=post.author.username)
 
 
 @login_required
 def follow_index(request):
-    post_list = Post.objects.filter(author__following__user=request.user)
+    post_list = Post.objects.filter(
+        author__following__user=request.user
+    ).select_related('author')
     page = paginator(request, post_list)
     return render(request, 'posts/follow.html', {'page': page})
 

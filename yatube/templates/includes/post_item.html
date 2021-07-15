@@ -17,6 +17,11 @@
     {% endif %}
     <div class="d-flex justify-content-between align-items-center">
       <div class="btn-group">
+        {% if read_button == True %}
+        <a class="btn btn-sm btn-primary" href="{% url 'post_view' post.author.username post.id %}" role="button">
+          Читать
+        </a>
+        {% endif %}
         {% if comment_button == True %}
         <a class="btn btn-sm btn-primary" href="{% url 'add_comment' post.author.username post.id %}" role="button">
           Добавить комментарий{% if post.comments.exists %} | {{ post.comments.count }} {% endif %}

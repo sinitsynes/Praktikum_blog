@@ -7,8 +7,8 @@
   {% include "includes/menu.html" with follow=True %}
 
   {% for post in page %}
-    {% include "includes/post_item.html" with comment_button=True %}
-      {% if not forloop.last %}<hr>{% endif %}
+    {% include "includes/post_item.html" with comment_button=True read_button=True %}
+    {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
 
   {% include "includes/paginator.html" %}
