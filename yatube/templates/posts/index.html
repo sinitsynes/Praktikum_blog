@@ -6,18 +6,18 @@
 
 {% block content %}
 
-  {% cache 20 index_page request.user.username page %}
+  {% cache 20 index_page request.user.username page.number %}
 
-  {% include "includes/menu.html" with index=True %}
+    {% include "includes/menu.html" with index=True %}
  
-  {% for post in page %}
-    {% include "includes/post_item.html" with comment_button=True read_button=True %}
-    {% if not forloop.last %}<hr>{% endif %}
-  {% endfor %}
+    {% for post in page %}
+      {% include "includes/post_item.html" with comment_button=True %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
 
   {% endcache %}
 
-{% include "includes/paginator.html" %}
+  {% include "includes/paginator.html" %}
 
 
 {% endblock %}

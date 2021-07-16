@@ -45,6 +45,17 @@ class PostsViewsTests(TestCase):
             image=cls.uploaded
         )
 
+    def post_check(self, example, post):
+        example_attrs = (
+            (example.author.username, post.author.username),
+            (example.text, post.text),
+            (example.group, post.group),
+            (example.image, post.image)
+        )
+        for expected_attr, post_attr in example_attrs:
+            with self.subTest(post_attr=post_attr):
+                self.assertEqual(expected_attr, post_attr)
+
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
@@ -57,19 +68,23 @@ class PostsViewsTests(TestCase):
             PostsViewsTests.author)
 
     def test_templates_used(self):
+        example_author = PostsViewsTests.author
+        example_post = PostsViewsTests.post
+        example_group = PostsViewsTests.group
+
         urls = (
             ('index', None, 'posts/index.html'),
             ('new_post', None, 'posts/new_post.html'),
             ('post_view',
-             (PostsViewsTests.author, PostsViewsTests.post.id),
+             (example_author.username, example_post.id),
              'posts/post.html'),
             ('group_posts',
-             (PostsViewsTests.group.slug,),
+             (example_group.slug,),
              'posts/group.html'),
-            ('profile', (PostsViewsTests.author.username, ),
+            ('profile', (example_author.username,),
              'posts/profile.html'),
             ('post_edit',
-             (PostsViewsTests.author, PostsViewsTests.post.id),
+             (example_author.username, example_post.id),
              'posts/new_post.html')
         )
 
@@ -85,15 +100,7 @@ class PostsViewsTests(TestCase):
         )
         self.assertIn('page', response.context)
         post = response.context['page'][0]
-        post_attributes_expected = {
-            PostsViewsTests.author.username: post.author.username,
-            PostsViewsTests.post.text: post.text,
-            PostsViewsTests.post.group: post.group,
-            PostsViewsTests.post.image: post.image
-        }
-        for expected_attr, post_attr in post_attributes_expected.items():
-            with self.subTest(post_attr=post_attr):
-                self.assertEqual(expected_attr, post_attr)
+        self.post_check(PostsViewsTests.post, post)
 
     def test_profile_valid_context(self):
         response = self.authorized_client.get(
@@ -114,19 +121,12 @@ class PostsViewsTests(TestCase):
         self.assertEqual(author.username, PostsViewsTests.author.username)
 
         post = response.context['page'][0]
-        post_attributes_expected = {
-            PostsViewsTests.author.username: post.author.username,
-            PostsViewsTests.post.text: post.text,
-            PostsViewsTests.post.group: post.group,
-            PostsViewsTests.post.image: post.image
-        }
-        for expected_attr, post_attr in post_attributes_expected.items():
-            with self.subTest(post_attr=post_attr):
-                self.assertEqual(expected_attr, post_attr)
+        self.post_check(PostsViewsTests.post, post)
 
     def test_group_posts_valid_context(self):
+        example_group = PostsViewsTests.group
         response = self.authorized_client.get(
-            reverse('group_posts', kwargs={'slug': PostsViewsTests.group.slug})
+            reverse('group_posts', kwargs={'slug': example_group.slug})
         )
         list_of_context = (
             'group',
@@ -137,56 +137,44 @@ class PostsViewsTests(TestCase):
                 self.assertIn(item, response.context)
 
         group = response.context['group']
-        group_attrs_expected = {
-            PostsViewsTests.group.title: group.title,
-            PostsViewsTests.group.slug: group.slug,
-            PostsViewsTests.group.description: group.description
-        }
-        for expected_group_attr, group_attr in group_attrs_expected.items():
-            with self.subTest(group_attr=group_attr):
+        group_attrs_expected = (
+            (example_group.title, group.title),
+            (example_group.slug, group.slug),
+            (example_group.description, group.description)
+        )
+        for expected_group_attr, group_attr in group_attrs_expected:
+            with self.subTest(expected_group_attr=group_attr):
                 self.assertEqual(expected_group_attr, group_attr)
 
         post = response.context['page'][0]
-        post_attributes_expected = {
-            PostsViewsTests.author.username: post.author.username,
-            PostsViewsTests.post.text: post.text,
-            PostsViewsTests.post.group: post.group,
-            PostsViewsTests.post.image: post.image
-        }
-        for expected_attr, post_attr in post_attributes_expected.items():
-            with self.subTest(post_attr=post_attr):
-                self.assertEqual(expected_attr, post_attr)
+        self.post_check(PostsViewsTests.post, post)
 
     def test_post_view_valid_context(self):
+        example_author = PostsViewsTests.author
+        example_post = PostsViewsTests.post
         response = self.authorized_client.get(
             reverse('post_view',
                     kwargs={
-                        'username': PostsViewsTests.author.username,
-                        'post_id': PostsViewsTests.post.id
+                        'username': example_author.username,
+                        'post_id': example_post.id
                     }))
         self.assertIn('post', response.context)
 
         post = response.context['post']
-        post_attributes_expected = {
-            PostsViewsTests.author.username: post.author.username,
-            PostsViewsTests.post.text: post.text,
-            PostsViewsTests.post.group: post.group,
-            PostsViewsTests.post.image: post.image
-        }
-        for expected_attr, post_attr in post_attributes_expected.items():
-            with self.subTest(post_attr=post_attr):
-                self.assertEqual(expected_attr, post_attr)
+        self.post_check(example_post, post)
 
         self.assertIn('form', response.context)
         self.assertIsInstance(response.context['form'], CommentForm)
 
     def test_new_post_edit_post_valid_context(self):
+        example_author = PostsViewsTests.author
+        example_post = PostsViewsTests.post
         responses = (
             reverse('new_post'),
             reverse('post_edit',
                     kwargs={
-                        'username': PostsViewsTests.author.username,
-                        'post_id': PostsViewsTests.post.id
+                        'username': example_author.username,
+                        'post_id': example_post.id
                     }))
         for response in responses:
             response = self.authorized_client.get(response)
@@ -228,27 +216,24 @@ class PaginatorTest(TestCase):
             description='сообщество для тестов'
         )
 
-        posts = [
+        cls.posts = [
             Post(
-                text='Здравствуйте, я из теста %s',
+                text='Здравствуйте, я из теста %s' % i,
                 author=cls.author,
                 group=cls.group
             )
             for i in range(POST_COUNT + 7)
         ]
-        Post.objects.bulk_create(posts)
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
+        Post.objects.bulk_create(cls.posts)
 
     def setUp(self):
         cache.clear()
 
     def test_paginator(self):
+        POST_ORPHANS = len(PaginatorTest.posts) - POST_COUNT
         posts_on_page = (
             (POST_COUNT, 1, (reverse('index'))),
-            (POST_COUNT - 3, 2, (reverse('index') + '?page=2')),
+            (POST_ORPHANS, 2, (reverse('index') + '?page=2')),
         )
         for amount, page, url in posts_on_page:
             with self.subTest(page=page):
@@ -261,9 +246,13 @@ class PaginatorTest(TestCase):
 
 class CacheTest(TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create(username='test_author')
+
     def setUp(self):
         cache.clear()
-        CacheTest.author = User.objects.create(username='test_author')
         self.authorized_client = Client()
         self.authorized_client.force_login(CacheTest.author)
 

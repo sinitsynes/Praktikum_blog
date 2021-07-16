@@ -3,10 +3,10 @@
 {% block content %}
   <div class="row">
     <div class="col-md-3 mb-3 mt-1">
-      {% include "includes/profile_card.html" %}
+      {% include "includes/profile_card.html" with author=post.author following_button=False %}
     </div>
     <div class="col-md-9">
-      {% include "includes/post_item.html" with comment_button=True %}
+      {% include "includes/post_item.html" with comment_button=False %}
       {% include "includes/comments.html" %}
     </div>
   </div>

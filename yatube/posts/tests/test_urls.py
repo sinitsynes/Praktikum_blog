@@ -30,11 +30,15 @@ class PostsURLTests(TestCase):
         self.authorized_client.force_login(PostsURLTests.author)
 
     def test_valid_url_200_response_unauthorized(self):
+        author = PostsURLTests.author
+        post = PostsURLTests.post
+        group = PostsURLTests.group
+
         responses = (
             '/',
-            f'/group/{PostsURLTests.group.slug}/',
-            f'/{PostsURLTests.author.username}/',
-            f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/'
+            f'/group/{group.slug}/',
+            f'/{author.username}/',
+            f'/{author.username}/{post.id}/'
         )
         for value in responses:
             with self.subTest(response=value):
@@ -46,24 +50,31 @@ class PostsURLTests(TestCase):
         not_author_client = Client()
         not_author_client.force_login(not_author)
 
+        author = PostsURLTests.author
+        post = PostsURLTests.post
+
+        post_kwargs = {
+            'username': author.username,
+            'post_id': post.id
+        }
+
         clients_redirect = (
             (self.client,
-             ('/new/'),
+             '/new/',
              reverse('login') + '?next=' + reverse('new_post')
              ),
 
             (self.client,
-             f'/{PostsURLTests.author.username}/'
-             f'{PostsURLTests.post.id}/comment/',
+             f'/{author.username}/{post.id}/comment/',
              reverse(
                  'login'
-             ) + '?next=' + f'/{PostsURLTests.author.username}'
-                            f'/{PostsURLTests.post.id}/comment/'),
+             ) + '?next=' + reverse(
+                 'add_comment', kwargs=post_kwargs)),
 
             (not_author_client,
              f'/{PostsURLTests.author.username}/'
              f'{PostsURLTests.post.id}/edit/',
-             f'/{PostsURLTests.author.username}/{PostsURLTests.post.id}/')
+             reverse('post_view', kwargs=post_kwargs))
         )
 
         for client, request_url, redirect in clients_redirect:

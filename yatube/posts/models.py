@@ -32,7 +32,8 @@ class Post(models.Model):
                               blank=True, null=True, related_name='posts',
                               verbose_name='Сообщество',
                               help_text='Укажите сообщество')
-    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(verbose_name='Иллюстрация',
+                              upload_to='posts/', blank=True, null=True)
 
     class Meta:
         verbose_name = 'Запись'
@@ -50,8 +51,7 @@ class Comment(models.Model):
     author = models.ForeignKey(User, verbose_name='Автор',
                                related_name='comments',
                                on_delete=models.CASCADE)
-    text = models.TextField(blank=False, null=True,
-                            verbose_name='Комментарий')
+    text = models.TextField(verbose_name='Комментарий')
     created = models.DateTimeField(auto_now_add=True,
                                    verbose_name='Дата комментария')
 

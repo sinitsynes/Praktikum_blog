@@ -53,6 +53,7 @@ class PostFormTests(TestCase):
             'group': PostFormTests.group.id,
             'image': PostFormTests.uploaded
         }
+        test_image = 'posts/small.gif'
 
         response = self.author_client.post(
             reverse('new_post'), data=form_data,
@@ -64,7 +65,7 @@ class PostFormTests(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(new_post.text, form_data['text'])
         self.assertEqual(new_post.group.id, form_data['group'])
-        self.assertEqual(new_post.image, 'posts/small.gif')
+        self.assertEqual(new_post.image.name, test_image)
 
     def test_post_create_unauthorized(self):
         posts_count_before = Post.objects.count()
@@ -163,12 +164,26 @@ class PostFormTests(TestCase):
         self.assertEqual(
             PostFormTests.author.username, post.author.username)
 
-    def test_comment_authorized(self):
-        post = Post.objects.create(
-            text='Пост слоёного теста',
-            author=PostFormTests.author,
-            group=PostFormTests.group,
+
+class CommentFormTests(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create(
+            username='test_author'
         )
+        cls.post = Post.objects.create(
+            text='Пост слоёного теста',
+            author=cls.author,
+        )
+
+    def test_comment_authorized(self):
+        self.author_client = Client()
+        self.author_client.force_login(CommentFormTests.author)
+
+        post = CommentFormTests.post
+
         post_view_kwargs = {'username': post.author.username,
                             'post_id': post.id}
 
@@ -186,18 +201,14 @@ class PostFormTests(TestCase):
             response,
             reverse('post_view', kwargs=post_view_kwargs))
 
-        comment = post.comments.first()
+        comment = post.comments.last()
         self.assertEqual(post.comments.count(), comment_count + 1)
         self.assertEqual(comment.text, form_data['text'])
-        self.assertEqual(comment.post.id, post.id)
-        self.assertEqual(comment.author.username, post.author.username)
+        self.assertEqual(comment.post, post)
+        self.assertEqual(comment.author, post.author)
 
     def test_comment_unauthorized(self):
-        post = Post.objects.create(
-            text='Пост слоёного теста',
-            author=PostFormTests.author,
-            group=PostFormTests.group,
-        )
+        post = CommentFormTests.post
         post_view_kwargs = {'username': post.author.username,
                             'post_id': post.id}
 
