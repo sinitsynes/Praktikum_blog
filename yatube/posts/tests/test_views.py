@@ -45,12 +45,21 @@ class PostsViewsTests(TestCase):
             image=cls.uploaded
         )
 
-    def post_check(self, example, post):
+    def post_check(self, context, **is_post):
+        example = PostsViewsTests.post
+        if is_post:
+            self.assertIn('post', context)
+            post = context['post']
+        else:
+            self.assertIn('page', context)
+            post = context['page'][0]
+
         example_attrs = (
             (example.author.username, post.author.username),
             (example.text, post.text),
             (example.group, post.group),
-            (example.image, post.image)
+            (example.image, post.image),
+            (example.pub_date, post.pub_date)
         )
         for expected_attr, post_attr in example_attrs:
             with self.subTest(post_attr=post_attr):
@@ -99,8 +108,8 @@ class PostsViewsTests(TestCase):
             reverse('index')
         )
         self.assertIn('page', response.context)
-        post = response.context['page'][0]
-        self.post_check(PostsViewsTests.post, post)
+        self.assertTrue(len(response.context) > 0, 'Страница пуста')
+        self.post_check(response.context)
 
     def test_profile_valid_context(self):
         response = self.authorized_client.get(
@@ -120,8 +129,8 @@ class PostsViewsTests(TestCase):
         author = response.context['author']
         self.assertEqual(author.username, PostsViewsTests.author.username)
 
-        post = response.context['page'][0]
-        self.post_check(PostsViewsTests.post, post)
+        self.assertTrue(len(response.context) > 0, 'Страница пуста')
+        self.post_check(response.context)
 
     def test_group_posts_valid_context(self):
         example_group = PostsViewsTests.group
@@ -146,8 +155,8 @@ class PostsViewsTests(TestCase):
             with self.subTest(expected_group_attr=group_attr):
                 self.assertEqual(expected_group_attr, group_attr)
 
-        post = response.context['page'][0]
-        self.post_check(PostsViewsTests.post, post)
+        self.assertTrue(len(response.context) > 0, 'Контекст пуст')
+        self.post_check(response.context)
 
     def test_post_view_valid_context(self):
         example_author = PostsViewsTests.author
@@ -159,9 +168,7 @@ class PostsViewsTests(TestCase):
                         'post_id': example_post.id
                     }))
         self.assertIn('post', response.context)
-
-        post = response.context['post']
-        self.post_check(example_post, post)
+        self.post_check(response.context, is_post=True)
 
         self.assertIn('form', response.context)
         self.assertIsInstance(response.context['form'], CommentForm)
@@ -169,15 +176,15 @@ class PostsViewsTests(TestCase):
     def test_new_post_edit_post_valid_context(self):
         example_author = PostsViewsTests.author
         example_post = PostsViewsTests.post
-        responses = (
+        client_responses = (
             reverse('new_post'),
             reverse('post_edit',
                     kwargs={
                         'username': example_author.username,
                         'post_id': example_post.id
                     }))
-        for response in responses:
-            response = self.authorized_client.get(response)
+        for client_response in client_responses:
+            response = self.authorized_client.get(client_response)
             self.assertIn('form', response.context)
             self.assertIsInstance(response.context['form'], PostForm)
 
@@ -216,24 +223,25 @@ class PaginatorTest(TestCase):
             description='сообщество для тестов'
         )
 
-        cls.posts = [
+        cls.posts = (
             Post(
                 text='Здравствуйте, я из теста %s' % i,
                 author=cls.author,
                 group=cls.group
             )
             for i in range(POST_COUNT + 7)
-        ]
+        )
         Post.objects.bulk_create(cls.posts)
+
+        cls.POST_ORPHANS = 7
 
     def setUp(self):
         cache.clear()
 
     def test_paginator(self):
-        POST_ORPHANS = len(PaginatorTest.posts) - POST_COUNT
         posts_on_page = (
             (POST_COUNT, 1, (reverse('index'))),
-            (POST_ORPHANS, 2, (reverse('index') + '?page=2')),
+            (PaginatorTest.POST_ORPHANS, 2, (reverse('index') + '?page=2')),
         )
         for amount, page, url in posts_on_page:
             with self.subTest(page=page):

@@ -30,6 +30,8 @@ class PostFormTests(TestCase):
             content=cls.small_gif,
             content_type='image/gif')
 
+        cls.test_image = 'posts/small.gif'
+
         cls.author = User.objects.create_user(username='test_author')
         cls.group = Group.objects.create(
             title='тестовое сообщество',
@@ -53,7 +55,6 @@ class PostFormTests(TestCase):
             'group': PostFormTests.group.id,
             'image': PostFormTests.uploaded
         }
-        test_image = 'posts/small.gif'
 
         response = self.author_client.post(
             reverse('new_post'), data=form_data,
@@ -65,7 +66,7 @@ class PostFormTests(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(new_post.text, form_data['text'])
         self.assertEqual(new_post.group.id, form_data['group'])
-        self.assertEqual(new_post.image.name, test_image)
+        self.assertEqual(new_post.image.name, PostFormTests.test_image)
 
     def test_post_create_unauthorized(self):
         posts_count_before = Post.objects.count()
