@@ -45,13 +45,14 @@ class PostsViewsTests(TestCase):
             image=cls.uploaded
         )
 
-    def post_check(self, context, **is_post):
+    def post_check(self, context, is_post=False):
         example = PostsViewsTests.post
         if is_post:
             self.assertIn('post', context)
             post = context['post']
         else:
             self.assertIn('page', context)
+            self.assertTrue(len(context) > 0, 'Страница пуста')
             post = context['page'][0]
 
         example_attrs = (
@@ -108,7 +109,6 @@ class PostsViewsTests(TestCase):
             reverse('index')
         )
         self.assertIn('page', response.context)
-        self.assertTrue(len(response.context) > 0, 'Страница пуста')
         self.post_check(response.context)
 
     def test_profile_valid_context(self):
@@ -129,7 +129,6 @@ class PostsViewsTests(TestCase):
         author = response.context['author']
         self.assertEqual(author.username, PostsViewsTests.author.username)
 
-        self.assertTrue(len(response.context) > 0, 'Страница пуста')
         self.post_check(response.context)
 
     def test_group_posts_valid_context(self):
@@ -155,7 +154,6 @@ class PostsViewsTests(TestCase):
             with self.subTest(expected_group_attr=group_attr):
                 self.assertEqual(expected_group_attr, group_attr)
 
-        self.assertTrue(len(response.context) > 0, 'Контекст пуст')
         self.post_check(response.context)
 
     def test_post_view_valid_context(self):
@@ -176,15 +174,15 @@ class PostsViewsTests(TestCase):
     def test_new_post_edit_post_valid_context(self):
         example_author = PostsViewsTests.author
         example_post = PostsViewsTests.post
-        client_responses = (
+        urls = (
             reverse('new_post'),
             reverse('post_edit',
                     kwargs={
                         'username': example_author.username,
                         'post_id': example_post.id
                     }))
-        for client_response in client_responses:
-            response = self.authorized_client.get(client_response)
+        for url in urls:
+            response = self.authorized_client.get(url)
             self.assertIn('form', response.context)
             self.assertIsInstance(response.context['form'], PostForm)
 
@@ -222,18 +220,16 @@ class PaginatorTest(TestCase):
             slug='test_slug',
             description='сообщество для тестов'
         )
-
+        cls.POST_ORPHANS = 7
         cls.posts = (
             Post(
                 text='Здравствуйте, я из теста %s' % i,
                 author=cls.author,
                 group=cls.group
             )
-            for i in range(POST_COUNT + 7)
+            for i in range(POST_COUNT + cls.POST_ORPHANS)
         )
         Post.objects.bulk_create(cls.posts)
-
-        cls.POST_ORPHANS = 7
 
     def setUp(self):
         cache.clear()

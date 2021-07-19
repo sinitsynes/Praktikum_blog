@@ -30,7 +30,7 @@ class PostFormTests(TestCase):
             content=cls.small_gif,
             content_type='image/gif')
 
-        cls.test_image = 'posts/small.gif'
+        cls.test_image = f'posts/{cls.uploaded.name}'
 
         cls.author = User.objects.create_user(username='test_author')
         cls.group = Group.objects.create(
