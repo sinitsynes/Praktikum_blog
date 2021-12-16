@@ -1,3 +1,31 @@
 # Praktikum_blog
 
-[![CI](https://github.com/yandex-praktikum/Praktikum_blog/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
+Прототип площадки для личного блога:
+Автор может зарегистрироваться по почте, постить текстовые сообщения, прикладывать к ним картинки.
+Читатель может подписаться на авторов и собрать свою ленту, комментировать их посты.
+Состоит из трех приложенией: 
+- posts - отвечает за сами посты, сообщества, подписки;
+- users - за авторизацию пользователей
+- about - статичные страницы об авторе.
+
+С помощью Unittest имплеменированы тесты view-функций и показа страниц, включая кеширование.
+
+Для локальной установки:
+- склонировать проект
+- создать окружение и активировать виртуальное окружение
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+- установить зависимости
+```
+pip install -r requirements.txt
+```
+- применить миграции в БД
+```
+python manage.py migrate
+```
+и запустить сервер:
+```
+python manage.py runserver
+```
